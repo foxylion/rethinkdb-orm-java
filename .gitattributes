@@ -1,0 +1,6 @@
+# By default we handle everything with LF line endings
+* text eol=lf
+
+# Some filetypes should be handled as binary
+*.png binary
+

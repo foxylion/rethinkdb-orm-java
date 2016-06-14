@@ -1,0 +1,3 @@
+
+include ':rethinkdb-orm'
+include ':orm-test'

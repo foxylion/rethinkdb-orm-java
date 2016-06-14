@@ -1,0 +1,54 @@
+
+package {{modelPackage}};
+
+import com.rethinkdb.RethinkDB;
+import com.rethinkdb.net.Connection;
+
+import {{primaryKeyType}};
+
+import java.util.List;
+
+public class {{daoName}} {
+
+    private static final RethinkDB r = RethinkDB.r;
+
+    private static final String TABLE_NAME = "{{tableName}}";
+    private static final String PRIMARY_KEY = "{{primaryKeyName}}";
+
+    private final Connection connection;
+
+    public {{daoName}}(Connection connection) {
+        this.connection = connection;
+    }
+
+    public void initTable() {
+        if (!hasTable(TABLE_NAME)) {
+            r.tableCreate(TABLE_NAME).optArg("primaryKey", PRIMARY_KEY).run(connection);
+        }
+    }
+
+    public void create({{modelClassName}} model) {
+        r.table(TABLE_NAME).insert(model);
+    }
+
+    public List<{{modelClassName}}> read() {
+        return r.table(TABLE_NAME).run(connection);
+    }
+
+    public {{modelClassName}} read({{primaryKeyClassName}} {{primaryKeyName}}) {
+        return r.table(TABLE_NAME).get(id).run(connection);
+    }
+
+    public void update({{modelClassName}} model) {
+        r.table(TABLE_NAME).update(model);
+    }
+
+    public void delete({{primaryKeyClassName}} {{primaryKeyName}}) {
+        r.table(TABLE_NAME).get(id).delete();
+    }
+
+    private boolean hasTable(String table) {
+        List<String> tables = r.tableList().run(connection);
+        return tables.contains(table);
+    }
+}
