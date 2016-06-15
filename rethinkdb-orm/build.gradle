@@ -16,6 +16,7 @@ dependencies {
     compile 'com.rethinkdb:rethinkdb-driver:2.3.0'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.7.4'
     compile 'io.reactivex:rxjava:1.0.10'
+    compile 'javax.inject:javax.inject:1'
     compile project(':rethinkdb-orm-annotations')
 
     // Annotation processor specific dependencies

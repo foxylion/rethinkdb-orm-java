@@ -1,7 +1,7 @@
 # RethinkDB ORM for Java
 
 [![Build Status](https://img.shields.io/travis/foxylion/rethinkdb-orm-java/master.svg?style=flat-square)](https://travis-ci.org/foxylion/rethinkdb-orm-java)
-[![Maven Version](https://img.shields.io/maven-central/v/de.jakobjarosch.rethinkdb/rethinkdb-orm.svg?style=flat-square)](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22de.jakobjarosch.rethinkdb%22%20AND%20a%3A%rethinkdb-orm%22)
+[![Maven Version](https://img.shields.io/maven-central/v/de.jakobjarosch.rethinkdb/rethinkdb-orm.svg?style=flat-square)](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22de.jakobjarosch.rethinkdb%22)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat-square)
 ![Maintenance](https://img.shields.io/maintenance/yes/2016.svg?style=flat-square)
 
@@ -30,7 +30,7 @@ public MyModel {
 
 The annotation processor will automatically generate a `MyModelDAO` class which
 can be used to create, read, update, delete your model (CRUD). It is also possible
-to stream the change sets. [Here](orm-test/src/main/java/EntryPoint.java) you can find a sample implementation.
+to stream the change sets. [Here](rethinkdb-orm-test/src/main/java/EntryPoint.java) you can find a sample implementation.
 
 ### Configure as a dependency
 

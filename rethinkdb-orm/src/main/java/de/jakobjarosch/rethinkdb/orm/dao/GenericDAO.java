@@ -3,10 +3,7 @@ package de.jakobjarosch.rethinkdb.orm.dao;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.rethinkdb.RethinkDB;
-import com.rethinkdb.gen.ast.GetField;
-import com.rethinkdb.gen.ast.IndexCreate;
-import com.rethinkdb.gen.ast.ReqlExpr;
-import com.rethinkdb.gen.ast.ReqlFunction1;
+import com.rethinkdb.gen.ast.*;
 import com.rethinkdb.gen.exc.ReqlDriverError;
 import com.rethinkdb.net.Connection;
 import com.rethinkdb.net.Cursor;
@@ -14,7 +11,10 @@ import de.jakobjarosch.rethinkdb.orm.model.ChangeFeedElement;
 import de.jakobjarosch.rethinkdb.orm.model.IndexModel;
 import rx.Observable;
 
+import javax.inject.Provider;
 import java.util.*;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class GenericDAO<T, PK> {
@@ -22,14 +22,14 @@ public class GenericDAO<T, PK> {
     private static final RethinkDB R = RethinkDB.r;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final Connection connection;
+    private final Provider<Connection> connection;
     private final Class<T> clazz;
     private final String tableName;
     private final String primaryKey;
 
     private final Set<IndexModel> indices = new HashSet<>();
 
-    public GenericDAO(Connection connection, Class<T> clazz, String tableName, String primaryKey) {
+    public GenericDAO(Provider<Connection> connection, Class<T> clazz, String tableName, String primaryKey) {
         this.connection = connection;
         this.clazz = clazz;
         this.tableName = tableName;
@@ -42,7 +42,7 @@ public class GenericDAO<T, PK> {
 
     public void initTable() {
         if (!hasTable(tableName)) {
-            R.tableCreate(tableName).optArg("primary_key", primaryKey).run(connection);
+            R.tableCreate(tableName).optArg("primary_key", primaryKey).run(connection.get());
         }
 
         for (IndexModel index : indices) {
@@ -54,55 +54,56 @@ public class GenericDAO<T, PK> {
                     indexCreate = indexCreate.optArg("geo", true);
                 }
 
-                indexCreate.run(connection);
+                indexCreate.run(connection.get());
             }
         }
     }
 
     public void create(T model) {
         Map<?, ?> map = MAPPER.convertValue(model, Map.class);
-        R.table(tableName).insert(map).run(connection);
+        R.table(tableName).insert(map).run(connection.get());
     }
 
     public List<T> read() {
-        List<Map<?, ?>> mapList = R.table(tableName).run(connection);
+        List<Map<?, ?>> mapList = R.table(tableName).run(connection.get());
         return mapList.stream()
                 .map(map -> MAPPER.convertValue(map, clazz))
                 .collect(Collectors.toList());
     }
 
     public T read(PK id) {
-        Map<?, ?> map = R.table(tableName).get(id).run(connection);
+        Map<?, ?> map = R.table(tableName).get(id).run(connection.get());
         return MAPPER.convertValue(map, clazz);
     }
 
-    public List<T> read(ReqlFunction1 filter) {
-        return R.table(tableName).filter(filter).run(connection);
+    public List<T> read(Function<Table, ReqlExpr> filter) {
+        final Table table = R.table(tableName);
+        return filter.apply(table).run(connection.get());
     }
 
     public void update(T model) {
-        R.table(tableName).update(model).run(connection);
+        R.table(tableName).update(model).run(connection.get());
     }
 
     public void delete(PK id) {
-        R.table(tableName).get(id).delete().run(connection);
+        R.table(tableName).get(id).delete().run(connection.get());
     }
 
     public Observable<ChangeFeedElement<T>> changes() {
         return changes(Optional.empty());
     }
 
-    public Observable<ChangeFeedElement<T>> changes(ReqlFunction1 filter) {
+    public Observable<ChangeFeedElement<T>> changes(Function<Table, ReqlExpr> filter) {
         return changes(Optional.of(filter));
     }
 
     @SuppressWarnings("unchecked")
-    private Observable<ChangeFeedElement<T>> changes(Optional<ReqlFunction1> filter) {
+    private Observable<ChangeFeedElement<T>> changes(Optional<Function<Table, ReqlExpr>> filter) {
         return Observable.create(subscriber -> {
             Cursor<Map<?, Map<?, ?>>> cursor = null;
             try {
-                cursor = filter.<Cursor>map(f -> R.table(tableName).filter(f).changes().run(connection))
-                        .orElse(R.table(tableName).changes().run(connection));
+                final Table table = R.table(tableName);
+                cursor = filter.orElse(t -> t).apply(table).changes().run(connection.get());
 
                 while (!subscriber.isUnsubscribed()) {
                     Map<?, Map<?, ?>> map = cursor.next();
@@ -125,7 +126,7 @@ public class GenericDAO<T, PK> {
     }
 
     private boolean hasIndex(String indexName) {
-        List<String> indices = R.table(tableName).indexList().run(connection);
+        List<String> indices = R.table(tableName).indexList().run(connection.get());
         return indices.contains(indexName);
     }
 
@@ -145,7 +146,7 @@ public class GenericDAO<T, PK> {
     }
 
     private boolean hasTable(String table) {
-        List<String> tables = R.tableList().run(connection);
+        List<String> tables = R.tableList().run(connection.get());
         return tables.contains(table);
     }
 }

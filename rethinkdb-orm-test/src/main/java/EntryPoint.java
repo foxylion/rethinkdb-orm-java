@@ -9,7 +9,7 @@ public class EntryPoint {
 
     public static void main(String[] args) throws InterruptedException {
         try (Connection connection = RethinkDB.r.connection().hostname("localhost").db("test").connect()) {
-            TestModelDAO dao = new TestModelDAO(connection);
+            TestModelDAO dao = new TestModelDAO(() -> connection);
 
             // Initialize the table (creates the table, and indices)
             dao.initTable();

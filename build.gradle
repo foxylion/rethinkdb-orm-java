@@ -78,7 +78,8 @@ configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations')]) {
                     }
                 }
             } else {
-                mavenLocal()
+                mavenInstaller {
+                }
             }
         }
     }

@@ -3,7 +3,9 @@ package de.jakobjarosch.rethinkdb.orm;
 import com.google.auto.service.AutoService;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
+import com.rethinkdb.gen.ast.ReqlExpr;
 import com.rethinkdb.gen.ast.ReqlFunction1;
+import com.rethinkdb.gen.ast.Table;
 import com.rethinkdb.net.Connection;
 import com.squareup.javapoet.*;
 import de.jakobjarosch.rethinkdb.orm.annotation.PrimaryKey;
@@ -18,6 +20,7 @@ import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
+import javax.inject.Provider;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
@@ -28,6 +31,7 @@ import java.io.Writer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @AutoService(Processor.class)
@@ -89,6 +93,8 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
                     TypeName genericDaoGenericType = ParameterizedTypeName.get(genericDaoType, modelType, primaryKeyType);
                     TypeName listOfModelsType = ParameterizedTypeName.get(listType, modelType);
                     TypeName changeFeedType = ParameterizedTypeName.get(observableType, ParameterizedTypeName.get(changeFeedElement, modelType));
+                    TypeName connectionProviderType = ParameterizedTypeName.get(ClassName.get(Provider.class), ClassName.get(Connection.class));
+                    TypeName queryFilterType = ParameterizedTypeName.get(ClassName.get(Function.class), ClassName.get(Table.class), ClassName.get(ReqlExpr.class));
 
                     TypeSpec type = TypeSpec.classBuilder(daoClassName)
                             .addModifiers(Modifier.PUBLIC)
@@ -97,7 +103,7 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
 
                             .addMethod(MethodSpec.constructorBuilder()
                                     .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(Connection.class, "connection")
+                                    .addParameter(connectionProviderType, "connection")
                                     .addStatement("this.dao = new $T<$T, $T>(connection, $T.class, $S, $S)",
                                             genericDaoType, modelType, primaryKeyType, modelType, modelAnnotation.tableName(), primaryKey.getVariableName())
                                     .addCode(createIndiceCodeBlock(indices))
@@ -129,7 +135,7 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
 
                             .addMethod((MethodSpec.methodBuilder("read")
                                     .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(ReqlFunction1.class, "filter")
+                                    .addParameter(queryFilterType, "filter")
                                     .returns(listOfModelsType)
                                     .addStatement("return this.dao.read(filter)")
                                     .build()))
@@ -154,7 +160,7 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
 
                             .addMethod((MethodSpec.methodBuilder("changes")
                                     .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(ReqlFunction1.class, "filter")
+                                    .addParameter(queryFilterType, "filter")
                                     .returns(changeFeedType)
                                     .addStatement("return this.dao.changes(filter)")
                                     .build()))
