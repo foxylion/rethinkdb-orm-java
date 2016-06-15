@@ -2,4 +2,4 @@ build:
 	./gradlew build
 
 travis-deploy:
-	./gradlew upload
+	./gradlew upload closeRepository

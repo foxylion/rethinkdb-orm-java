@@ -1,7 +1,14 @@
-
-plugins {
-    id 'idea'
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3"
+    }
 }
+
+apply plugin: 'idea'
+apply plugin: 'io.codearte.nexus-staging'
 
 idea {
     module {
@@ -9,6 +16,9 @@ idea {
         sourceDirs += file(project.projectDir.absolutePath + '/build/generated/source/apt/main')
     }
 }
+
+def ossrhUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2';
+def artifactGroup = 'de.jakobjarosch.rethinkdb'
 
 configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations')]) {
     apply plugin: 'java'
@@ -39,10 +49,8 @@ configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations')]) {
         }
     }
 
-    group = 'de.jakobjarosch.rethinkdb'
+    group = artifactGroup
     version = System.getenv('TRAVIS_TAG') ?: '1.0-SNAPSHOT'
-
-    def ossrhUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2';
 
     uploadArchives {
         repositories {
@@ -83,4 +91,11 @@ configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations')]) {
             }
         }
     }
+}
+
+nexusStaging {
+    serverUrl = ossrhUrl
+    username = ossrhUser
+    password = ossrhPass
+    packageGroup = artifactGroup
 }
