@@ -96,15 +96,16 @@ public class GenericDAO<T, PK> {
         return changes(Optional.of(filter));
     }
 
+    @SuppressWarnings("unchecked")
     private Observable<ChangeFeedElement<T>> changes(Optional<ReqlFunction1> filter) {
         return Observable.create(subscriber -> {
-            Cursor cursor = null;
+            Cursor<Map<?, Map<?, ?>>> cursor = null;
             try {
                 cursor = filter.<Cursor>map(f -> R.table(tableName).filter(f).changes().run(connection))
                         .orElse(R.table(tableName).changes().run(connection));
 
                 while (!subscriber.isUnsubscribed()) {
-                    Map<?, Map<?, ?>> map = (Map<?, Map<?, ?>>) cursor.next();
+                    Map<?, Map<?, ?>> map = cursor.next();
                     ChangeFeedElement<T> change = mapChangeFeedElement(map);
                     subscriber.onNext(change);
                 }

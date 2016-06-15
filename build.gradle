@@ -9,3 +9,77 @@ idea {
         sourceDirs += file(project.projectDir.absolutePath + '/build/generated/source/apt/main')
     }
 }
+
+configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations')]) {
+    apply plugin: 'java'
+    apply plugin: 'signing'
+    apply plugin: 'maven'
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from 'build/docs/javadoc'
+    }
+
+    task sourcesJar(type: Jar) {
+        from sourceSets.main.allSource
+        classifier = 'sources'
+    }
+
+    artifacts {
+        archives jar
+        archives javadocJar
+        archives sourcesJar
+    }
+
+    def artifactRelease = (boolean) System.getenv('TRAVIS_TAG');
+
+    if(artifactRelease) {
+        signing {
+            sign configurations.archives
+        }
+    }
+
+    group = 'de.jakobjarosch.rethinkdb'
+    version = System.getenv('TRAVIS_TAG') ?: '1.0-SNAPSHOT'
+
+    def ossrhUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2';
+
+    uploadArchives {
+        repositories {
+            if (artifactRelease) {
+                mavenDeployer {
+                    beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+                    repository(url: ossrhUrl) {
+                        authentication(userName: ossrhUser, password: ossrhPass)
+                    }
+                    pom.project {
+                        name 'RethinkDB ORM for Java'
+                        description 'A lightweight OR mapper for RethinkDB, written in Java.'
+                        url 'https://gitub.com/foxylion/rethinkdb-orm-java'
+                        scm {
+                            url 'https://gitub.com/foxylion/rethinkdb-orm-java'
+                            connection 'scm:git@github.com:foxylion/rethinkdb-orm-java.git'
+                            developerConnection 'scm:git@github.com:foxylion/rethinkdb-orm-java.git'
+                        }
+                        licenses {
+                            license {
+                                name 'The Apache License, Version 2.0'
+                                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                            }
+                        }
+                        developers {
+                            developer {
+                                name 'Jakob Jarosch'
+                                email 'dev@jakobjarosch.de'
+                                organizationUrl 'https://www.jakobjarosch.de'
+                            }
+                        }
+                    }
+                }
+            } else {
+                mavenLocal()
+            }
+        }
+    }
+}

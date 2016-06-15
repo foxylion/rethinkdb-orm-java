@@ -1,3 +1,4 @@
 
 include ':rethinkdb-orm'
-include ':orm-test'
+include ':rethinkdb-orm-annotations'
+include ':rethinkdb-orm-test'

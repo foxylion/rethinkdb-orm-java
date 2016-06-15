@@ -71,7 +71,6 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
                 final PackageElement packageElement = (PackageElement) typeElement.getEnclosingElement();
 
                 final String packageName = packageElement.getQualifiedName().toString();
-                final String className = typeElement.getSimpleName().toString();
                 final String daoClassName = typeElement.getSimpleName() + "DAO";
                 final String daoQualifiedName = packageName.isEmpty() ? daoClassName : packageName + "." + daoClassName;
 
@@ -191,11 +190,9 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
                 .orElse(new PrimaryKeyModel("java.util", "String", "id"));
     }
 
-
     private Set<IndexModel> scanIndices(RethinkDBModel element) {
         return Arrays.stream(element.indices()).map(i -> new IndexModel(i.geo(), i.fields())).collect(Collectors.toSet());
     }
-
 
     private TypeElement getTypeElement(TypeMirror type) {
         return (TypeElement) processingEnv.getTypeUtils().asElement(type);
