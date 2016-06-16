@@ -21,7 +21,8 @@ public class PersistentConnection extends Connection {
     private boolean closed = false;
 
     public PersistentConnection(Connection wrapped) {
-        this(wrapped, () -> {});
+        this(wrapped, () -> {
+        });
     }
 
     public PersistentConnection(Connection wrapped, CloseCallback closeCallback) {
@@ -43,7 +44,7 @@ public class PersistentConnection extends Connection {
     }
 
     private void checkOpen() {
-        if(closed) {
+        if (closed) {
             throw new ReqlDriverError("Connection already returned to pool.");
         }
     }

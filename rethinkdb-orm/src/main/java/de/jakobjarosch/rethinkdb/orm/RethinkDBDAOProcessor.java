@@ -7,14 +7,14 @@ import com.rethinkdb.gen.ast.ReqlExpr;
 import com.rethinkdb.gen.ast.Table;
 import com.rethinkdb.net.Connection;
 import com.squareup.javapoet.*;
-import de.jakobjarosch.rethinkdb.pool.PersistentConnection;
-import de.jakobjarosch.rethinkdb.pool.RethinkDBConnectionPool;
 import de.jakobjarosch.rethinkdb.orm.annotation.PrimaryKey;
 import de.jakobjarosch.rethinkdb.orm.annotation.RethinkDBModel;
 import de.jakobjarosch.rethinkdb.orm.dao.GenericDAO;
 import de.jakobjarosch.rethinkdb.orm.model.ChangeFeedElement;
 import de.jakobjarosch.rethinkdb.orm.model.IndexModel;
 import de.jakobjarosch.rethinkdb.orm.model.PrimaryKeyModel;
+import de.jakobjarosch.rethinkdb.pool.PersistentConnection;
+import de.jakobjarosch.rethinkdb.pool.RethinkDBConnectionPool;
 import rx.Observable;
 
 import javax.annotation.processing.AbstractProcessor;

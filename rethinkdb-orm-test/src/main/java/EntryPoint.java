@@ -1,5 +1,3 @@
-import com.rethinkdb.RethinkDB;
-import com.rethinkdb.net.Connection;
 import de.jakobjarosch.rethinkdb.orm.model.ChangeFeedElement;
 import de.jakobjarosch.rethinkdb.pool.RethinkDBConnectionPool;
 import de.jakobjarosch.rethinkdb.pool.RethinkDBConnectionPoolBuilder;

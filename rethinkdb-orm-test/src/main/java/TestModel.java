@@ -1,4 +1,3 @@
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import de.jakobjarosch.rethinkdb.orm.annotation.Index;
 import de.jakobjarosch.rethinkdb.orm.annotation.PrimaryKey;
 import de.jakobjarosch.rethinkdb.orm.annotation.RethinkDBModel;

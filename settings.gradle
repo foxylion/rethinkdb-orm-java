@@ -1,4 +1,3 @@
-
 include ':rethinkdb-pool'
 include ':rethinkdb-orm-annotations'
 include ':rethinkdb-orm'

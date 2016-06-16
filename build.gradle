@@ -40,7 +40,7 @@ configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations'), pro
 
     def artifactRelease = (boolean) System.getenv('TRAVIS_TAG');
 
-    if(artifactRelease) {
+    if (artifactRelease) {
         signing {
             sign configurations.archives
         }

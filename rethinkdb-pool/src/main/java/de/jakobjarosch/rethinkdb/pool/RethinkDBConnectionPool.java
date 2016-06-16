@@ -166,7 +166,7 @@ public class RethinkDBConnectionPool {
             }
 
             for (Connection connection : connections) {
-                if(!connection.isOpen()) {
+                if (!connection.isOpen()) {
                     LOGGER.info("Found a closed connection, trying to re-establish connection...");
                     connection.reconnect();
                 }

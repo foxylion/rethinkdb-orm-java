@@ -1,4 +1,3 @@
-
 public class SubModel {
 
     private String myField;
