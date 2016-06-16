@@ -8,6 +8,14 @@
 This is a lightweight OR mapper for [RethinkDB](https://www.rethinkdb.com/) and Java.
 It automatically maps your POJOs to a RethinkDB compatible data structure and vice versa.
 
+## What do I get?
+
+- Lightweight OR mapper using annotation processors
+  - Support to map fields to other database field names
+  - Support to ignore fields from model or database
+- Possibility to automatically create tables and inidices
+- Connection pooling support across threads (also standalone available)
+
 ## How to use?
 
 The integration is using annotation processors to generate the DAO classes.
@@ -30,9 +38,24 @@ public MyModel {
 
 The annotation processor will automatically generate a `MyModelDAO` class which
 can be used to create, read, update, delete your model (CRUD). It is also possible
-to stream the change sets. [Here](rethinkdb-orm-test/src/main/java/EntryPoint.java) you can find a sample implementation.
+to stream the change sets.
+
+The DAO can be used very easily.
+
+```java
+Connection connection = RethinkDB.r.connection().connect();
+MyModelDAO dao = new MyModelDAO(connection);
+MyModel model = dao.read("2a22fda0");
+model.location = "12.234,23.764";
+dao.update(model);
+connection.close();
+```
+
+**More examples can be found [here](rethinkdb-orm-test/src/main/java/EntryPoint.java).**
 
 ### Configure as a dependency
+
+The current version can be found [here](releases).
 
 #### Maven
 ```xml
