@@ -17,7 +17,7 @@ idea {
     }
 }
 
-configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations')]) {
+configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations'), project(':rethinkdb-pool')]) {
     apply plugin: 'java'
     apply plugin: 'signing'
     apply plugin: 'maven'

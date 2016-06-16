@@ -4,10 +4,11 @@ import com.google.auto.service.AutoService;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.rethinkdb.gen.ast.ReqlExpr;
-import com.rethinkdb.gen.ast.ReqlFunction1;
 import com.rethinkdb.gen.ast.Table;
 import com.rethinkdb.net.Connection;
 import com.squareup.javapoet.*;
+import de.jakobjarosch.rethinkdb.pool.PersistentConnection;
+import de.jakobjarosch.rethinkdb.pool.RethinkDBConnectionPool;
 import de.jakobjarosch.rethinkdb.orm.annotation.PrimaryKey;
 import de.jakobjarosch.rethinkdb.orm.annotation.RethinkDBModel;
 import de.jakobjarosch.rethinkdb.orm.dao.GenericDAO;
@@ -103,8 +104,20 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
 
                             .addMethod(MethodSpec.constructorBuilder()
                                     .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(connectionProviderType, "connection")
-                                    .addStatement("this.dao = new $T<$T, $T>(connection, $T.class, $S, $S)",
+                                    .addParameter(RethinkDBConnectionPool.class, "pool")
+                                    .addStatement("this(pool.getProvider())")
+                                    .build())
+
+                            .addMethod(MethodSpec.constructorBuilder()
+                                    .addModifiers(Modifier.PUBLIC)
+                                    .addParameter(Connection.class, "connection")
+                                    .addStatement("this(() -> new $T(connection))", PersistentConnection.class)
+                                    .build())
+
+                            .addMethod(MethodSpec.constructorBuilder()
+                                    .addModifiers(Modifier.PUBLIC)
+                                    .addParameter(connectionProviderType, "connectionProvider")
+                                    .addStatement("this.dao = new $T<$T, $T>(connectionProvider, $T.class, $S, $S)",
                                             genericDaoType, modelType, primaryKeyType, modelType, modelAnnotation.tableName(), primaryKey.getVariableName())
                                     .addCode(createIndiceCodeBlock(indices))
                                     .build())

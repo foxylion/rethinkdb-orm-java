@@ -13,6 +13,8 @@ repositories {
 }
 
 dependencies {
+    compile 'ch.qos.logback:logback-classic:1.1.7'
+
     compile project(':rethinkdb-orm')
     apt project(':rethinkdb-orm')
 }

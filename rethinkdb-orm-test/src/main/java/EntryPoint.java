@@ -1,6 +1,8 @@
 import com.rethinkdb.RethinkDB;
 import com.rethinkdb.net.Connection;
 import de.jakobjarosch.rethinkdb.orm.model.ChangeFeedElement;
+import de.jakobjarosch.rethinkdb.pool.RethinkDBConnectionPool;
+import de.jakobjarosch.rethinkdb.pool.RethinkDBConnectionPoolBuilder;
 import rx.Observable;
 import rx.Subscription;
 import rx.schedulers.Schedulers;
@@ -8,8 +10,11 @@ import rx.schedulers.Schedulers;
 public class EntryPoint {
 
     public static void main(String[] args) throws InterruptedException {
-        try (Connection connection = RethinkDB.r.connection().hostname("localhost").db("test").connect()) {
-            TestModelDAO dao = new TestModelDAO(() -> connection);
+        final RethinkDBConnectionPool pool = new RethinkDBConnectionPoolBuilder().build();
+        try {
+            pool.start();
+
+            TestModelDAO dao = new TestModelDAO(pool);
 
             // Initialize the table (creates the table, and indices)
             dao.initTable();
@@ -44,6 +49,8 @@ public class EntryPoint {
             subscription.unsubscribe();
 
             Thread.sleep(1000);
+        } finally {
+            pool.shutdown(5);
         }
     }
 }

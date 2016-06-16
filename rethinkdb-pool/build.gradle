@@ -1,0 +1,17 @@
+
+plugins {
+    id 'java'
+    id 'idea'
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'com.rethinkdb:rethinkdb-driver:2.3.0'
+    compile 'javax.inject:javax.inject:1'
+}
