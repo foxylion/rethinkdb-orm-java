@@ -17,9 +17,6 @@ idea {
     }
 }
 
-def ossrhUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2';
-def artifactGroup = 'de.jakobjarosch.rethinkdb'
-
 configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations')]) {
     apply plugin: 'java'
     apply plugin: 'signing'
@@ -49,8 +46,8 @@ configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations')]) {
         }
     }
 
-    group = artifactGroup
-    version = System.getenv('TRAVIS_TAG') ?: '1.0-SNAPSHOT'
+    group = 'de.jakobjarosch.rethinkdb'
+    version = System.getenv('TRAVIS_TAG') ?: 'master-SNAPSHOT'
 
     uploadArchives {
         repositories {
@@ -58,7 +55,7 @@ configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations')]) {
                 mavenDeployer {
                     beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-                    repository(url: ossrhUrl) {
+                    repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2') {
                         authentication(userName: ossrhUser, password: ossrhPass)
                     }
                     pom.project {
@@ -94,8 +91,7 @@ configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations')]) {
 }
 
 nexusStaging {
-    serverUrl = ossrhUrl
     username = ossrhUser
     password = ossrhPass
-    packageGroup = artifactGroup
+    packageGroup = 'de.jakobjarosch'
 }
