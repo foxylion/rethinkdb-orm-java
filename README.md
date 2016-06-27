@@ -32,7 +32,7 @@ To get started you've to annotate your POJO.
 )
 public class MyModel {
    @PrimaryKey private String id;
-   private String location;
+   private ReqlPoint location;
 }
 ```
 
@@ -43,12 +43,12 @@ to stream the change sets.
 The DAO can be used very easily.
 
 ```java
-Connection connection = RethinkDB.r.connection().connect();
-MyModelDAO dao = new MyModelDAO(connection);
-MyModel model = dao.read("2a22fda0");
-model.location = "12.234,23.764";
-dao.update(model);
-connection.close();
+try (Connection connection = RethinkDB.r.connection().connect()) {
+    MyModelDAO dao = new MyModelDAO(connection);
+    MyModel model = dao.read("2a22fda0");
+    model.location = new ReqlPoint(12.234, 23.764);
+    dao.update(model);
+}
 ```
 
 **More examples can be found [here](rethinkdb-orm-samples/src/main/java/EntryPoint.java).**
