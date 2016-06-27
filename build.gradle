@@ -63,9 +63,9 @@ configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations'), pro
                     pom.project {
                         name 'RethinkDB ORM for Java'
                         description 'A lightweight OR mapper for RethinkDB, written in Java.'
-                        url 'https://gitub.com/foxylion/rethinkdb-orm-java'
+                        url 'https://github.com/foxylion/rethinkdb-orm-java'
                         scm {
-                            url 'https://gitub.com/foxylion/rethinkdb-orm-java'
+                            url 'https://github.com/foxylion/rethinkdb-orm-java'
                             connection 'scm:git@github.com:foxylion/rethinkdb-orm-java.git'
                             developerConnection 'scm:git@github.com:foxylion/rethinkdb-orm-java.git'
                         }
