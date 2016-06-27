@@ -12,7 +12,9 @@ repositories {
 }
 
 dependencies {
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.7.4'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.7.5'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.7.5'
+
     compile 'io.reactivex:rxjava:1.0.10'
     compile project(':rethinkdb-pool')
     compile project(':rethinkdb-orm-annotations')

@@ -1,12 +1,15 @@
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+
 public class SubModel {
 
-    private String myField;
+    private ZonedDateTime lastUpdate;
 
-    public String getMyField() {
-        return myField;
+    public ZonedDateTime getLastUpdate() {
+        return lastUpdate;
     }
 
-    public void setMyField(String myField) {
-        this.myField = myField;
+    public void setLastUpdate(ZonedDateTime lastUpdate) {
+        this.lastUpdate = lastUpdate;
     }
 }

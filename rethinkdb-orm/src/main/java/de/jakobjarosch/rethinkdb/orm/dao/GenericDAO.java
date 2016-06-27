@@ -1,7 +1,7 @@
 package de.jakobjarosch.rethinkdb.orm.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.rethinkdb.RethinkDB;
@@ -9,8 +9,10 @@ import com.rethinkdb.gen.ast.GetField;
 import com.rethinkdb.gen.ast.IndexCreate;
 import com.rethinkdb.gen.ast.ReqlExpr;
 import com.rethinkdb.gen.ast.Table;
+import com.rethinkdb.gen.exc.ReqlClientError;
 import com.rethinkdb.gen.exc.ReqlDriverError;
 import com.rethinkdb.gen.exc.ReqlInternalError;
+import com.rethinkdb.model.OptArgs;
 import com.rethinkdb.net.Connection;
 import com.rethinkdb.net.Cursor;
 import de.jakobjarosch.rethinkdb.orm.model.ChangeFeedElement;
@@ -27,6 +29,9 @@ public class GenericDAO<T, PK> {
     private static final RethinkDB R = RethinkDB.r;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    static {
+        MAPPER.registerModule(new JavaTimeModule());
+    }
 
     private final Provider<Connection> connectionProvider;
     private final Class<T> clazz;
@@ -46,6 +51,9 @@ public class GenericDAO<T, PK> {
         this.indices.add(new IndexModel(geo, fields.split(",")));
     }
 
+    /**
+     * Initialize the table, automatically create the table and indices if they do not yet exist.
+     */
     public void initTable() {
         try (Connection connection = connectionProvider.get()) {
             if (!hasTable(connection, tableName)) {
@@ -67,24 +75,49 @@ public class GenericDAO<T, PK> {
         }
     }
 
+    /**
+     * Creates a model in the RethinkDB database.
+     *
+     * @param model Model which should be created.
+     * @throws ReqlClientError Error is thrown when there was an error.
+     *                         E.g. there was already a model with the same primary key.
+     */
     public void create(T model) {
         try (Connection connection = connectionProvider.get()) {
-            Map<?, ?> map = MAPPER.convertValue(model, Map.class);
-            R.table(tableName).insert(map).run(connection);
+            Map<String, ?> result = R.table(tableName).insert(model).run(connection);
+
+            if (((Long) result.get("errors")) > 0) {
+                throw new ReqlClientError("Failed to create model. %s", ((String) result.get("first_error")).split("\n")[0]);
+            }
         }
     }
 
+    /**
+     * @return Returns a list of all models from the database.
+     */
     public List<T> read() {
         return read(t -> t);
     }
 
-    public T read(PK id) {
+    /**
+     * Retrieves a model with the given primary key.
+     *
+     * @param id The primary key of the model which should be retrieved.
+     * @return Maybe the model matching the given primary key.
+     */
+    public Optional<T> read(PK id) {
         try (Connection connection = connectionProvider.get()) {
             Map<?, ?> map = R.table(tableName).get(id).run(connection);
-            return MAPPER.convertValue(map, clazz);
+            return Optional.ofNullable(MAPPER.convertValue(map, clazz));
         }
     }
 
+    /**
+     * Retrieves a list of models matching the given filter.
+     *
+     * @param filter The filter function which should be applied when executing the query.
+     * @return A filtered list fo models matching the given filter.
+     */
     public List<T> read(Function<Table, ReqlExpr> filter) {
         try (Connection connection = connectionProvider.get()) {
             final Table table = R.table(tableName);
@@ -101,22 +134,55 @@ public class GenericDAO<T, PK> {
         }
     }
 
+    /**
+     * Updates a model.
+     */
     public void update(T model) {
         try (Connection connection = connectionProvider.get()) {
-            R.table(tableName).update(model).run(connection);
+            Map<String, ?> result = R.table(tableName).update(model).run(connection);
+
+            if (((Long) result.get("errors")) > 0) {
+                throw new ReqlClientError("Failed to update model. %s", ((String) result.get("first_error")).split("\n")[0]);
+            }
         }
     }
 
+    /**
+     * Updates a model in the non atomic way. See <a href="https://rethinkdb.com/api/java/update/">ReQL command: update</a>
+     * for more details.
+     */
+    public void updateNonAtomic(T model) {
+        try (Connection connection = connectionProvider.get()) {
+            R.table(tableName).update(model).run(connection, OptArgs.of("non_atomic", true));
+        }
+    }
+
+    /**
+     * Deletes a model from the database.
+     *
+     * @param id The primary key of the model which should be removed.
+     */
     public void delete(PK id) {
         try (Connection connection = connectionProvider.get()) {
             R.table(tableName).get(id).delete().run(connection);
         }
     }
 
+    /**
+     * Provides a change feed of all changes which occur after subscribing to the returned {@link Observable}.
+     *
+     * @return Returns an {@link Observable} which subscribes to all changes made after the subscription started.
+     */
     public Observable<ChangeFeedElement<T>> changes() {
         return changes(Optional.empty());
     }
 
+    /**
+     * Provides a change feed of all matching changes which occur after subscribing to the returned {@link Observable}.
+     *
+     * @param filter A filter for the change feed to only show changes matching the filter.
+     * @return Returns an {@link Observable} which subscribes to all matching changes made after the subscription started.
+     */
     public Observable<ChangeFeedElement<T>> changes(Function<Table, ReqlExpr> filter) {
         return changes(Optional.of(filter));
     }

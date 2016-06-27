@@ -1,11 +1,13 @@
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import de.jakobjarosch.rethinkdb.orm.annotation.Index;
 import de.jakobjarosch.rethinkdb.orm.annotation.PrimaryKey;
 import de.jakobjarosch.rethinkdb.orm.annotation.RethinkDBModel;
+import de.jakobjarosch.rethinkdb.orm.model.geo.ReqlPoint;
 
 @RethinkDBModel(
         tableName = "my_table",
         indices = {
-                @Index(fields = {"test"}, geo = true),
+                @Index(fields = {"location"}, geo = true),
                 @Index(fields = {"field1", "field2"})
         }
 )
@@ -13,7 +15,7 @@ public class TestModel {
 
     @PrimaryKey
     private String id;
-    private String test;
+    private ReqlPoint location;
     private SubModel subModel;
 
     TestModel() {
@@ -27,12 +29,12 @@ public class TestModel {
         return id;
     }
 
-    public String getTest() {
-        return test;
+    public ReqlPoint getLocation() {
+        return location;
     }
 
-    public void setTest(String test) {
-        this.test = test;
+    public void setLocation(ReqlPoint location) {
+        this.location = location;
     }
 
     public SubModel getSubModel() {
