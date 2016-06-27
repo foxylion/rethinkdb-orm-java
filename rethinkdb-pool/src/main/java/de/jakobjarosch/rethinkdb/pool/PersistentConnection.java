@@ -58,7 +58,7 @@ public class PersistentConnection extends Connection {
     @Override
     public void connect() throws TimeoutException {
         checkOpen();
-        throw new ReqlDriverError("Connect is not supported on a already connected pool connection.");
+        throw new ReqlDriverError("Connect is not supported on an already connected pool connection.");
     }
 
     @Override

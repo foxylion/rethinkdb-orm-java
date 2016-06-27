@@ -14,6 +14,8 @@ idea {
     module {
         // Add automatically generated classes (by apt) to classpath
         sourceDirs += file(project.projectDir.absolutePath + '/build/generated/source/apt/main')
+        downloadJavadoc = true
+        downloadSources = true
     }
 }
 

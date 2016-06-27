@@ -1,17 +1,13 @@
-import de.jakobjarosch.rethinkdb.orm.model.ChangeFeedElement;
-import de.jakobjarosch.rethinkdb.pool.RethinkDBConnectionPool;
-import de.jakobjarosch.rethinkdb.pool.RethinkDBConnectionPoolBuilder;
-import rx.Observable;
+import de.jakobjarosch.rethinkdb.pool.RethinkDBPool;
+import de.jakobjarosch.rethinkdb.pool.RethinkDBPoolBuilder;
 import rx.Subscription;
 import rx.schedulers.Schedulers;
 
 public class EntryPoint {
 
     public static void main(String[] args) throws InterruptedException {
-        final RethinkDBConnectionPool pool = new RethinkDBConnectionPoolBuilder().build();
+        final RethinkDBPool pool = new RethinkDBPoolBuilder().build();
         try {
-            pool.start();
-
             TestModelDAO dao = new TestModelDAO(pool);
 
             // Initialize the table (creates the table, and indices)
@@ -35,8 +31,9 @@ public class EntryPoint {
 
             // Subscriptions are handled by RxJava
             // This sample subscribes to the change feed in an async mode
-            final Observable<ChangeFeedElement<TestModel>> subscribed = dao.changes().subscribeOn(Schedulers.newThread());
-            final Subscription subscription = subscribed.subscribe(change -> {
+            Subscription subscription = dao.changes()
+                    .subscribeOn(Schedulers.newThread())
+                    .subscribe(change -> {
                 System.out.println(Thread.currentThread().toString() + ": " + change);
             });
 
@@ -48,7 +45,7 @@ public class EntryPoint {
 
             Thread.sleep(1000);
         } finally {
-            pool.shutdown(5);
+            pool.shutdown();
         }
     }
 }

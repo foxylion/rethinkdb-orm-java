@@ -1,13 +1,16 @@
 package de.jakobjarosch.rethinkdb.orm.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.rethinkdb.RethinkDB;
 import com.rethinkdb.gen.ast.GetField;
 import com.rethinkdb.gen.ast.IndexCreate;
 import com.rethinkdb.gen.ast.ReqlExpr;
 import com.rethinkdb.gen.ast.Table;
 import com.rethinkdb.gen.exc.ReqlDriverError;
+import com.rethinkdb.gen.exc.ReqlInternalError;
 import com.rethinkdb.net.Connection;
 import com.rethinkdb.net.Cursor;
 import de.jakobjarosch.rethinkdb.orm.model.ChangeFeedElement;
@@ -24,6 +27,7 @@ public class GenericDAO<T, PK> {
     private static final RethinkDB R = RethinkDB.r;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+
     private final Provider<Connection> connectionProvider;
     private final Class<T> clazz;
     private final String tableName;
@@ -38,7 +42,7 @@ public class GenericDAO<T, PK> {
         this.primaryKey = primaryKey;
     }
 
-    public void addIndex(boolean geo, String fields) {
+    protected void addIndex(boolean geo, String fields) {
         this.indices.add(new IndexModel(geo, fields.split(",")));
     }
 
@@ -71,12 +75,7 @@ public class GenericDAO<T, PK> {
     }
 
     public List<T> read() {
-        try (Connection connection = connectionProvider.get()) {
-            List<Map<?, ?>> mapList = R.table(tableName).run(connection);
-            return mapList.stream()
-                    .map(map -> MAPPER.convertValue(map, clazz))
-                    .collect(Collectors.toList());
-        }
+        return read(t -> t);
     }
 
     public T read(PK id) {
@@ -89,7 +88,16 @@ public class GenericDAO<T, PK> {
     public List<T> read(Function<Table, ReqlExpr> filter) {
         try (Connection connection = connectionProvider.get()) {
             final Table table = R.table(tableName);
-            return filter.apply(table).run(connection);
+            Object result = filter.apply(table).run(connection);
+            if (result instanceof List) {
+                return ((List<?>) result).stream()
+                        .map(map -> MAPPER.convertValue(map, clazz))
+                        .collect(Collectors.toList());
+            } else if (result instanceof Map) {
+                return Lists.newArrayList(MAPPER.convertValue(result, clazz));
+            } else {
+                throw new ReqlInternalError("Unknown return type for query: " + result.getClass());
+            }
         }
     }
 

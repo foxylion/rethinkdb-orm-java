@@ -3,19 +3,15 @@ package de.jakobjarosch.rethinkdb.orm;
 import com.google.auto.service.AutoService;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
-import com.rethinkdb.gen.ast.ReqlExpr;
-import com.rethinkdb.gen.ast.Table;
 import com.rethinkdb.net.Connection;
 import com.squareup.javapoet.*;
 import de.jakobjarosch.rethinkdb.orm.annotation.PrimaryKey;
 import de.jakobjarosch.rethinkdb.orm.annotation.RethinkDBModel;
 import de.jakobjarosch.rethinkdb.orm.dao.GenericDAO;
-import de.jakobjarosch.rethinkdb.orm.model.ChangeFeedElement;
 import de.jakobjarosch.rethinkdb.orm.model.IndexModel;
 import de.jakobjarosch.rethinkdb.orm.model.PrimaryKeyModel;
 import de.jakobjarosch.rethinkdb.pool.PersistentConnection;
-import de.jakobjarosch.rethinkdb.pool.RethinkDBConnectionPool;
-import rx.Observable;
+import de.jakobjarosch.rethinkdb.pool.RethinkDBPool;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -32,7 +28,6 @@ import java.io.Writer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @AutoService(Processor.class)
@@ -86,26 +81,18 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
                 try (Writer w = fileObject.openWriter()) {
 
                     ClassName modelType = ClassName.get(typeElement);
-                    ClassName listType = ClassName.get(List.class);
-                    ClassName observableType = ClassName.get(Observable.class);
-                    ClassName changeFeedElement = ClassName.get(ChangeFeedElement.class);
                     ClassName primaryKeyType = ClassName.get(primaryKey.getPackageName(), primaryKey.getClassName());
-                    ClassName genericDaoType = ClassName.get(GenericDAO.class);
-                    TypeName genericDaoGenericType = ParameterizedTypeName.get(genericDaoType, modelType, primaryKeyType);
-                    TypeName listOfModelsType = ParameterizedTypeName.get(listType, modelType);
-                    TypeName changeFeedType = ParameterizedTypeName.get(observableType, ParameterizedTypeName.get(changeFeedElement, modelType));
                     TypeName connectionProviderType = ParameterizedTypeName.get(ClassName.get(Provider.class), ClassName.get(Connection.class));
-                    TypeName queryFilterType = ParameterizedTypeName.get(ClassName.get(Function.class), ClassName.get(Table.class), ClassName.get(ReqlExpr.class));
+                    ParameterizedTypeName genericDAO = ParameterizedTypeName.get(ClassName.get(GenericDAO.class), modelType, primaryKeyType);
 
                     TypeSpec type = TypeSpec.classBuilder(daoClassName)
                             .addModifiers(Modifier.PUBLIC)
-
-                            .addField(FieldSpec.builder(genericDaoGenericType, "dao", Modifier.PRIVATE, Modifier.FINAL).build())
+                            .superclass(genericDAO)
 
                             .addMethod(MethodSpec.constructorBuilder()
                                     .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(RethinkDBConnectionPool.class, "pool")
-                                    .addStatement("this(pool.getProvider())")
+                                    .addParameter(RethinkDBPool.class, "pool")
+                                    .addStatement("this(() -> pool.getConnection())")
                                     .build())
 
                             .addMethod(MethodSpec.constructorBuilder()
@@ -117,66 +104,10 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
                             .addMethod(MethodSpec.constructorBuilder()
                                     .addModifiers(Modifier.PUBLIC)
                                     .addParameter(connectionProviderType, "connectionProvider")
-                                    .addStatement("this.dao = new $T<$T, $T>(connectionProvider, $T.class, $S, $S)",
-                                            genericDaoType, modelType, primaryKeyType, modelType, modelAnnotation.tableName(), primaryKey.getVariableName())
+                                    .addStatement("super(connectionProvider, $T.class, $S, $S)",
+                                            modelType, modelAnnotation.tableName(), primaryKey.getVariableName())
                                     .addCode(createIndiceCodeBlock(indices))
                                     .build())
-
-                            .addMethod((MethodSpec.methodBuilder("initTable")
-                                    .addModifiers(Modifier.PUBLIC)
-                                    .addStatement("this.dao.initTable()")
-                                    .build()))
-
-                            .addMethod((MethodSpec.methodBuilder("create")
-                                    .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(TypeName.get(typeElement.asType()), "model")
-                                    .addStatement("this.dao.create(model)")
-                                    .build()))
-
-                            .addMethod(MethodSpec.methodBuilder("read")
-                                    .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(primaryKeyType, primaryKey.getVariableName())
-                                    .returns(modelType)
-                                    .addStatement("return this.dao.read($N)", primaryKey.getVariableName())
-                                    .build())
-
-                            .addMethod(MethodSpec.methodBuilder("read")
-                                    .addModifiers(Modifier.PUBLIC)
-                                    .returns(listOfModelsType)
-                                    .addStatement("return this.dao.read()")
-                                    .build())
-
-                            .addMethod((MethodSpec.methodBuilder("read")
-                                    .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(queryFilterType, "filter")
-                                    .returns(listOfModelsType)
-                                    .addStatement("return this.dao.read(filter)")
-                                    .build()))
-
-                            .addMethod((MethodSpec.methodBuilder("update")
-                                    .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(TypeName.get(typeElement.asType()), "model")
-                                    .addStatement("this.dao.update(model)")
-                                    .build()))
-
-                            .addMethod((MethodSpec.methodBuilder("delete")
-                                    .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(primaryKeyType, primaryKey.getVariableName())
-                                    .addStatement("this.dao.delete($N)", primaryKey.getVariableName())
-                                    .build()))
-
-                            .addMethod((MethodSpec.methodBuilder("changes")
-                                    .addModifiers(Modifier.PUBLIC)
-                                    .returns(changeFeedType)
-                                    .addStatement("return this.dao.changes()")
-                                    .build()))
-
-                            .addMethod((MethodSpec.methodBuilder("changes")
-                                    .addModifiers(Modifier.PUBLIC)
-                                    .addParameter(queryFilterType, "filter")
-                                    .returns(changeFeedType)
-                                    .addStatement("return this.dao.changes(filter)")
-                                    .build()))
 
                             .build();
 
@@ -190,7 +121,7 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
     private CodeBlock createIndiceCodeBlock(Set<IndexModel> indices) {
         final CodeBlock.Builder builder = CodeBlock.builder();
         for (IndexModel index : indices) {
-            builder.addStatement("this.dao.addIndex(" + index.isGeo() + ", $S)", Joiner.on(",").join(index.getFields()));
+            builder.addStatement("addIndex(" + index.isGeo() + ", $S)", Joiner.on(",").join(index.getFields()));
         }
         return builder.build();
     }

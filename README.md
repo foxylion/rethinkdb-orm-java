@@ -30,7 +30,7 @@ To get started you've to annotate your POJO.
       @Index(fields = {"location"}, geo = true)
    }
 )
-public MyModel {
+public class MyModel {
    @PrimaryKey private String id;
    private String location;
 }
@@ -51,7 +51,7 @@ dao.update(model);
 connection.close();
 ```
 
-**More examples can be found [here](rethinkdb-orm-test/src/main/java/EntryPoint.java).**
+**More examples can be found [here](rethinkdb-orm-samples/src/main/java/EntryPoint.java).**
 
 ### Configure as a dependency
 

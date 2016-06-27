@@ -1,4 +1,4 @@
 include ':rethinkdb-pool'
 include ':rethinkdb-orm-annotations'
 include ':rethinkdb-orm'
-include ':rethinkdb-orm-test'
+include ':rethinkdb-orm-samples'
