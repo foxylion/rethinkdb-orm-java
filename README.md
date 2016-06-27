@@ -55,7 +55,7 @@ try (Connection connection = RethinkDB.r.connection().connect()) {
 
 ### Configure as a dependency
 
-The current version can be found [here](releases).
+The current version can be found [here](https://github.com/foxylion/rethinkdb-orm-java/releases).
 
 #### Maven
 ```xml
