@@ -27,7 +27,7 @@ public class EntryPoint {
             model.setLocation(new ReqlPoint(127.0, 10.0));
 
             // Update the model in the database
-            dao.update(model);
+            dao.update("1", model);
 
             // Read the model from the database
             Optional<TestModel> dbModel = dao.read("1");

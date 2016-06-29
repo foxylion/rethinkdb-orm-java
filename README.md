@@ -24,12 +24,7 @@ Ensure that your IDE has [enabled annotation processing](https://immutables.gith
 To get started you've to annotate your POJO.
 
 ```java
-@RethinkDBModel(
-   tableName = "my_table",
-   indices = {
-      @Index(fields = {"location"}, geo = true)
-   }
-)
+@RethinkDBModel
 public class MyModel {
    @PrimaryKey private String id;
    private ReqlPoint location;
@@ -47,7 +42,7 @@ try (Connection connection = RethinkDB.r.connection().connect()) {
     MyModelDAO dao = new MyModelDAO(connection);
     MyModel model = dao.read("2a22fda0");
     model.location = new ReqlPoint(12.234, 23.764);
-    dao.update(model);
+    dao.update("2a22fda0", model);
 }
 ```
 

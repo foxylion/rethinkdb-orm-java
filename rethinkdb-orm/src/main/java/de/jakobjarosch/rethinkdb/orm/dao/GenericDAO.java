@@ -1,7 +1,5 @@
 package de.jakobjarosch.rethinkdb.orm.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.rethinkdb.RethinkDB;
@@ -27,11 +25,8 @@ import java.util.stream.Collectors;
 public class GenericDAO<T, PK> {
 
     private static final RethinkDB R = RethinkDB.r;
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ModelMapper MAPPER = new ModelMapper();
 
-    static {
-        MAPPER.registerModule(new JavaTimeModule());
-    }
 
     private final Provider<Connection> connectionProvider;
     private final Class<T> clazz;
@@ -76,7 +71,7 @@ public class GenericDAO<T, PK> {
     }
 
     /**
-     * Creates a model in the RethinkDB database.
+     * Creates a model in the RethinkDB table.
      *
      * @param model Model which should be created.
      * @throws ReqlClientError Error is thrown when there was an error.
@@ -84,19 +79,13 @@ public class GenericDAO<T, PK> {
      */
     public void create(T model) {
         try (Connection connection = connectionProvider.get()) {
-            Map<String, ?> result = R.table(tableName).insert(model).run(connection);
+            Map<?, ?> map = MAPPER.map(model);
+            Map<String, ?> result = R.table(tableName).insert(map).run(connection);
 
             if (((Long) result.get("errors")) > 0) {
-                throw new ReqlClientError("Failed to create model. %s", ((String) result.get("first_error")).split("\n")[0]);
+                throw new ReqlClientError("Failed to create model: %s", ((String) result.get("first_error")).split("\n")[0]);
             }
         }
-    }
-
-    /**
-     * @return Returns a list of all models from the database.
-     */
-    public List<T> read() {
-        return read(t -> t);
     }
 
     /**
@@ -108,26 +97,42 @@ public class GenericDAO<T, PK> {
     public Optional<T> read(PK id) {
         try (Connection connection = connectionProvider.get()) {
             Map<?, ?> map = R.table(tableName).get(id).run(connection);
-            return Optional.ofNullable(MAPPER.convertValue(map, clazz));
+            return Optional.ofNullable(MAPPER.map(map, clazz));
         }
     }
 
     /**
-     * Retrieves a list of models matching the given filter.
+     * Returns all models in the table, use this with caution,
+     * without filtering it could return a huge amount of data.
+     *
+     * @return Returns a list of all models in the table.
+     */
+    public DAOIterator<T> read() {
+        return read(t -> t);
+    }
+
+    /**
+     * Retrieves a iterator returning all models matching the given filter.
+     * <br>
+     * Be sure to call {@link DAOIterator#close()} after finishing the iterator.
      *
      * @param filter The filter function which should be applied when executing the query.
-     * @return A filtered list fo models matching the given filter.
+     * @return An iterator for models matching the given filter.
      */
-    public List<T> read(Function<Table, ReqlExpr> filter) {
+    public DAOIterator<T> read(Function<Table, ReqlExpr> filter) {
         try (Connection connection = connectionProvider.get()) {
             final Table table = R.table(tableName);
             Object result = filter.apply(table).run(connection);
             if (result instanceof List) {
-                return ((List<?>) result).stream()
-                        .map(map -> MAPPER.convertValue(map, clazz))
+                List<T> list = ((List<?>) result).stream()
+                        .map(map -> MAPPER.map((Map) map, clazz))
                         .collect(Collectors.toList());
+                return new DAOIterator<>(list.iterator(), clazz, MAPPER);
             } else if (result instanceof Map) {
-                return Lists.newArrayList(MAPPER.convertValue(result, clazz));
+                return new DAOIterator<>(Lists.newArrayList(result).iterator(), clazz, MAPPER);
+            } else if (result instanceof Cursor) {
+                Cursor<?> cursor = (Cursor<?>) result;
+                return new DAOIterator<>(cursor, clazz, MAPPER);
             } else {
                 throw new ReqlInternalError("Unknown return type for query: " + result.getClass());
             }
@@ -136,10 +141,14 @@ public class GenericDAO<T, PK> {
 
     /**
      * Updates a model.
+     *
+     * @param id    The id of the model which should be updated.
+     * @param model The model which should be updated.
      */
-    public void update(T model) {
+    public void update(PK id, T model) {
         try (Connection connection = connectionProvider.get()) {
-            Map<String, ?> result = R.table(tableName).update(model).run(connection);
+            Map<?, ?> map = MAPPER.map(model);
+            Map<String, ?> result = R.table(tableName).get(id).update(map).run(connection);
 
             if (((Long) result.get("errors")) > 0) {
                 throw new ReqlClientError("Failed to update model. %s", ((String) result.get("first_error")).split("\n")[0]);
@@ -150,15 +159,18 @@ public class GenericDAO<T, PK> {
     /**
      * Updates a model in the non atomic way. See <a href="https://rethinkdb.com/api/java/update/">ReQL command: update</a>
      * for more details.
+     *
+     * @param id    The id of the model which should be updated.
+     * @param model The model which should be updated.
      */
-    public void updateNonAtomic(T model) {
+    public void updateNonAtomic(PK id, T model) {
         try (Connection connection = connectionProvider.get()) {
-            R.table(tableName).update(model).run(connection, OptArgs.of("non_atomic", true));
+            R.table(tableName).get(id).update(model).run(connection, OptArgs.of("non_atomic", true));
         }
     }
 
     /**
-     * Deletes a model from the database.
+     * Deletes a model from the table.
      *
      * @param id The primary key of the model which should be removed.
      */
@@ -174,7 +186,7 @@ public class GenericDAO<T, PK> {
      * @return Returns an {@link Observable} which subscribes to all changes made after the subscription started.
      */
     public Observable<ChangeFeedElement<T>> changes() {
-        return changes(Optional.empty());
+        return changes(t -> t);
     }
 
     /**
@@ -183,17 +195,13 @@ public class GenericDAO<T, PK> {
      * @param filter A filter for the change feed to only show changes matching the filter.
      * @return Returns an {@link Observable} which subscribes to all matching changes made after the subscription started.
      */
-    public Observable<ChangeFeedElement<T>> changes(Function<Table, ReqlExpr> filter) {
-        return changes(Optional.of(filter));
-    }
-
     @SuppressWarnings("unchecked")
-    private Observable<ChangeFeedElement<T>> changes(Optional<Function<Table, ReqlExpr>> filter) {
+    public Observable<ChangeFeedElement<T>> changes(Function<Table, ReqlExpr> filter) {
         return Observable.create(subscriber -> {
             Cursor<Map<?, Map<?, ?>>> cursor = null;
             try (Connection connection = connectionProvider.get()) {
                 final Table table = R.table(tableName);
-                cursor = filter.orElse(t -> t).apply(table).changes().run(connection);
+                cursor = filter.apply(table).changes().run(connection);
 
                 while (!subscriber.isUnsubscribed()) {
                     Map<?, Map<?, ?>> map = cursor.next();
@@ -234,8 +242,8 @@ public class GenericDAO<T, PK> {
         final Map<?, ?> oldVal = map.get("old_val");
         final Map<?, ?> newVal = map.get("new_val");
 
-        final T oldValObj = oldVal != null ? MAPPER.convertValue(oldVal, clazz) : null;
-        final T newValObj = newVal != null ? MAPPER.convertValue(newVal, clazz) : null;
+        final T oldValObj = oldVal != null ? MAPPER.map(oldVal, clazz) : null;
+        final T newValObj = newVal != null ? MAPPER.map(newVal, clazz) : null;
 
         return new ChangeFeedElement<>(oldValObj, newValObj);
     }

@@ -19,6 +19,10 @@ dependencies {
     compile project(':rethinkdb-pool')
     compile project(':rethinkdb-orm-annotations')
 
+    testCompile 'org.mockito:mockito-all:2.0.2-beta'
+    testCompile 'org.assertj:assertj-core:3.4.1'
+    testCompile 'org.slf4j:slf4j-simple:1.7.21'
+
     // Annotation processor specific dependencies
     compile 'com.squareup:javapoet:1.7.0'
     compile 'com.google.auto.service:auto-service:1.0-rc2'

@@ -76,6 +76,9 @@ public class RethinkDBPoolBuilder {
 
     /**
      * When setting a custom config the basic configuration is ignored and the values of this config is used instead.
+     *
+     * @param config The config which should be applied to the pool.
+     * @return Returns the builder
      */
     @SuppressWarnings("unused")
     public RethinkDBPoolBuilder customConfig(GenericObjectPoolConfig config) {
@@ -97,7 +100,7 @@ public class RethinkDBPoolBuilder {
 
 
         GenericObjectPoolConfig config = this.config;
-        if(config == null) {
+        if (config == null) {
             config = new GenericObjectPoolConfig();
             config.setMaxTotal(maxConnections);
             config.setMinIdle(minFreeConnections);

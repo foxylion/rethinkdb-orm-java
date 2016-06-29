@@ -2,6 +2,7 @@ package de.jakobjarosch.rethinkdb.orm.model.geo;
 
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.rethinkdb.gen.proto.TermType;
 
 import java.util.Map;
@@ -12,10 +13,11 @@ public class ReqlPoint extends ReqlGeo {
     private final double longitude;
     private final double latitude;
 
+    // Constructor and parsing used to deserialize from RethinkDB response or jackson map structure.
     @JsonCreator
     ReqlPoint(Map<String, Object> data) {
-        this(GeoFactory.parseLongitude(data),
-                GeoFactory.parseLatitude(data));
+        this(parseLongitude(data),
+                parseLatitude(data));
     }
 
     public ReqlPoint(double longitude, double latitude) {
@@ -26,6 +28,7 @@ public class ReqlPoint extends ReqlGeo {
         this.latitude = latitude;
     }
 
+    @JsonProperty()
     public double getLongitude() {
         return longitude;
     }
@@ -52,5 +55,4 @@ public class ReqlPoint extends ReqlGeo {
     public int hashCode() {
         return Objects.hash(latitude, longitude);
     }
-
 }

@@ -10,36 +10,37 @@ import java.util.*;
 
 public class ReqlPolygon extends ReqlGeo {
 
-    private final List<ReqlPoint> points;
+    private final List<ReqlPoint> coordinates;
 
+    // Constructor and parsing used to deserialize from RethinkDB response or jackson map structure.
     @JsonCreator
     ReqlPolygon(Map<String, Object> data) {
-        this(GeoFactory.parsePolygon(data));
+        this(parsePoints(data));
     }
 
-    public ReqlPolygon(ReqlPoint... points) {
-        this(Arrays.asList(points));
+    public ReqlPolygon(ReqlPoint... coordinates) {
+        this(Arrays.asList(coordinates));
     }
 
-    public ReqlPolygon(List<ReqlPoint> points) {
+    public ReqlPolygon(List<ReqlPoint> coordinates) {
         super(TermType.POLYGON, null, null);
 
-        if (points.size() < 3) {
-            throw new ReqlCompileError("Polygon must contain at least 3 points");
+        if (coordinates.size() < 3) {
+            throw new ReqlCompileError("Polygon must contain at least 3 coordinates");
         }
 
-        points.forEach(args::coerceAndAdd);
+        coordinates.forEach(args::coerceAndAdd);
 
-        this.points = new ArrayList<>(points);
+        this.coordinates = new ArrayList<>(coordinates);
     }
 
-    public List<ReqlPoint> getPoints() {
-        return Collections.unmodifiableList(points);
+    public List<ReqlPoint> getCoordinates() {
+        return Collections.unmodifiableList(coordinates);
     }
 
     @Override
     public String toString() {
-        return "[ " + Joiner.on(", ").join(points) + " ]";
+        return "[ " + Joiner.on(", ").join(coordinates) + " ]";
     }
 
     @Override
@@ -47,11 +48,11 @@ public class ReqlPolygon extends ReqlGeo {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ReqlPolygon that = (ReqlPolygon) o;
-        return Objects.equals(points, that.points);
+        return Objects.equals(coordinates, that.coordinates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(points);
+        return Objects.hash(coordinates);
     }
 }
