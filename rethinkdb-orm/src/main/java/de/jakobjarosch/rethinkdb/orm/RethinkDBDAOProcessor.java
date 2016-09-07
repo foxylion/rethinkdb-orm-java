@@ -137,7 +137,7 @@ public class RethinkDBDAOProcessor extends AbstractProcessor {
 
         return primaryKeys.stream().findFirst()
                 .map(v -> new PrimaryKeyModel(getTypeElement(v.asType()), v.getSimpleName().toString()))
-                .orElse(new PrimaryKeyModel("java.util", "String", "id"));
+                .orElse(new PrimaryKeyModel("java.lang", "String", "id"));
     }
 
     private Set<IndexModel> scanIndices(RethinkDBModel element) {

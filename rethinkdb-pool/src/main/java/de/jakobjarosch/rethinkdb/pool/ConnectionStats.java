@@ -37,10 +37,7 @@ class ConnectionStats {
     private void cleanup() {
         if (lastCleanup + 1000 < System.currentTimeMillis()) {
             lastCleanup = System.currentTimeMillis();
-            stats.entrySet().stream()
-                    .filter(e -> e.getValue() < System.currentTimeMillis() - TIMEOUT)
-                    .map(e -> e.getKey())
-                    .forEach(stats::remove);
+            stats.entrySet().removeIf(e -> e.getValue() < System.currentTimeMillis() - TIMEOUT);
         }
     }
 }
