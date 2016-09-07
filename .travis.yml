@@ -9,7 +9,6 @@ jdk: oraclejdk8
 install: true
 
 before_script:
-  - openssl aes-256-cbc -K $encrypted_65aa329e7553_key -iv $encrypted_65aa329e7553_iv -in gradle.properties.enc -out gradle.properties -d
   - sudo docker run -d -p 28015:28015 rethinkdb:2.3.4
 
 script:
@@ -17,6 +16,8 @@ script:
 
 deploy:
   provider: script
-  script: make travis-deploy
+  script:
+    - openssl aes-256-cbc -K $encrypted_65aa329e7553_key -iv $encrypted_65aa329e7553_iv -in gradle.properties.enc -out gradle.properties -d
+    - make travis-deploy
   on:
     tags: true
