@@ -19,6 +19,8 @@ idea {
     }
 }
 
+def artifactRelease = (boolean) System.getenv('TRAVIS_TAG');
+
 configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations'), project(':rethinkdb-pool')]) {
     apply plugin: 'java'
     apply plugin: 'signing'
@@ -39,8 +41,6 @@ configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations'), pro
         archives javadocJar
         archives sourcesJar
     }
-
-    def artifactRelease = (boolean) System.getenv('TRAVIS_TAG');
 
     if (artifactRelease) {
         signing {
@@ -92,8 +92,10 @@ configure([project(':rethinkdb-orm'), project(':rethinkdb-orm-annotations'), pro
     }
 }
 
-nexusStaging {
-    username = ossrhUser
-    password = ossrhPass
-    packageGroup = 'de.jakobjarosch'
+if (artifactRelease) {
+    nexusStaging {
+        username = ossrhUser
+        password = ossrhPass
+        packageGroup = 'de.jakobjarosch'
+    }
 }

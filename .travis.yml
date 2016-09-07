@@ -10,6 +10,7 @@ install: true
 
 before_script:
   - sudo docker run -d -p 28015:28015 rethinkdb:2.3.4
+  - ./.travis.decrypt.sh
 
 script:
   - make build
@@ -17,7 +18,6 @@ script:
 deploy:
   provider: script
   script:
-    - openssl aes-256-cbc -K $encrypted_65aa329e7553_key -iv $encrypted_65aa329e7553_iv -in gradle.properties.enc -out gradle.properties -d
     - make travis-deploy
   on:
     tags: true
